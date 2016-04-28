@@ -20,7 +20,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name="com.soundcloud.android.crop.CropImageActivity" />
+
         <meta-data android:name="CLOUDINARY_URL" android:value="cloudinary://566381268756871:PwuGnA_I_miyh9SMja1d-y7YDlw@dpxfm9eoa" />
+
+        <service android:name=".UploadService"
+            android:exported="false"/>
     </application>
 
 </manifest>

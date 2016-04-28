@@ -59,24 +59,6 @@ public class UploaderStrategy extends AbstractUploaderStrategy {
             }
         }
 
-/*        Iterator filename = params.entrySet().iterator();
-
-        while(true) {
-            while (filename.hasNext()) {
-                Map.Entry connection = (Map.Entry) filename.next();
-                if (connection.getValue() instanceof Collection) {
-                    Iterator code = ((Collection) connection.getValue()).iterator();
-
-                    while (code.hasNext()) {
-                        Object responseStream = code.next();
-                        multipart1.addFormField((String) connection.getKey() + "[]", ObjectUtils.asString(responseStream));
-                    }
-                } else if (StringUtils.isNotBlank(connection.getValue())) {
-                    multipart1.addFormField((String) connection.getKey(), connection.getValue().toString());
-                }
-            }
-        }*/
-
         if (file instanceof String && !((String) file).matches("ftp:.*|https?:.*|s3:.*|data:[^;]*;base64,([a-zA-Z0-9/+\n=]+)")) {
             file = new File((String) file);
         }

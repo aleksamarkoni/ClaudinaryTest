@@ -1,32 +1,85 @@
 package com.example.aleksandarmarkovic.claudinarytest;
 
-import android.os.AsyncTask;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.ContextWrapper;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.Uri;
 import android.os.Bundle;
-import android.os.SystemClock;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.UploadCallback;
-import com.cloudinary.android.Utils;
-import com.cloudinary.utils.ObjectUtils;
+import com.soundcloud.android.crop.Crop;
+import com.squareup.picasso.Picasso;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.File;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity /*implements UploadCallback*/ {
 
-    Cloudinary cloudinary;
     Button mUpload;
+    Uri destination;
+    ProgressBar progressBar;
+    public static final String PHOTO_SERVICE = "Photo Service";
+    public static final String FINISHED_SERVICE = "Finished Service";
+    public static final String PROGRESS = "Progress";
+    TextView end, diff, url;
+    long startTime;
+    ImageView picture;
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        LocalBroadcastManager.getInstance(this).registerReceiver(photoUploadServiceReceiver,
+                new IntentFilter(PHOTO_SERVICE));
+        LocalBroadcastManager.getInstance(this).registerReceiver(finishServiceReceiver,
+                new IntentFilter(FINISHED_SERVICE));
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(photoUploadServiceReceiver);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(finishServiceReceiver);
+    }
+
+    private BroadcastReceiver photoUploadServiceReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final float progress = intent.getFloatExtra(PROGRESS, -1);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    progressBar.setProgress(Math.round(progress));
+                }
+            });
+        }
+    };
+
+    private BroadcastReceiver finishServiceReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String url = intent.getStringExtra("url");
+            final long endTime = intent.getLongExtra("end", -1);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    MainActivity.this.end.setText(String.valueOf(endTime));
+                    MainActivity.this.diff.setText(String.valueOf(startTime - endTime));
+                    MainActivity.this.url.setText(url);
+                    Picasso.with(MainActivity.this).load(url).into(MainActivity.this.picture);
+                }
+            });
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,61 +87,54 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        progressBar = (ProgressBar)  findViewById(R.id.progress);
+        picture = (ImageView) findViewById(R.id.picture);
+        end = (TextView) findViewById(R.id.end);
+        diff = (TextView) findViewById(R.id.diff);
+        url = (TextView) findViewById(R.id.url);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-
-
-        cloudinary = new Cloudinary(Utils.cloudinaryUrlFromContext(this));
         mUpload = (Button) findViewById(R.id.uploadButton);
-
         mUpload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                uploadImage();
+                Crop.pickImage(MainActivity.this);
             }
         });
-
-
     }
 
-    private void uploadImage() {
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(final Void ... params) {
-                long time = System.currentTimeMillis();
-                Log.d("ALEKSA", "" + time);
-                InputStream ins = getResources().openRawResource(R.raw.testimage);
-                try {
-                    Map<String, String> options = new HashMap<>();
-                    options.put("chunk_size", "5242881");
-                    cloudinary.uploader(new UploadCallback() {
-                        @Override
-                        public void uploadListener(int i) {
-                            Log.d("ALEKSA", "part number " + i);
-                        }
-                    }).upload(ins , options);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    try {
-                        ins.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-                long finishTime = System.currentTimeMillis();
-                Log.d("ALEKSA", "" + finishTime);
-                Log.d("ALEKSA", "is " + (finishTime - time));
-                return null;
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // TODO Auto-generated method stub
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == RESULT_OK) {
+            if (requestCode == Crop.REQUEST_PICK) {
+                beginCrop(data.getData());
+            } else if (requestCode == Crop.REQUEST_CROP) {
+                handleCrop(resultCode, data);
             }
-        }.execute();
+        }
+    }
+
+    private void beginCrop(Uri source) {
+        ContextWrapper cw = new ContextWrapper(this);
+        // path to /data/data/yourapp/app_data/imageDir
+        File directory = cw.getDir("imageDir", Context.MODE_PRIVATE);
+        // Create imageDir
+        File file = new File(directory,"/test");
+        destination = Uri.fromFile(file);
+        Crop.of(source, destination).asSquare().start(this);
+    }
+
+    private void handleCrop(int resultCode, Intent result) {
+        if (resultCode == RESULT_OK) {
+            startTime = System.currentTimeMillis();
+            TextView start = (TextView) findViewById(R.id.start);
+            start.setText(String.valueOf(startTime));
+            File image = new File(Crop.getOutput(result).getPath());
+            Intent intent =new Intent(MainActivity.this, UploadService.class);
+            intent.putExtra("file", image);
+            startService(intent);
+        }
     }
 
     @Override
@@ -112,4 +158,5 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+
 }
