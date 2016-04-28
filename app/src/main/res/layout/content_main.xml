@@ -12,10 +12,13 @@
     tools:context="com.example.aleksandarmarkovic.claudinarytest.MainActivity"
     tools:showIn="@layout/activity_main">
 
-    <TextView
-        android:layout_width="wrap_content"
+
+    <ImageView
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Hello World!" />
+        android:layout_above="@+id/uploadButton"
+        android:id="@+id/picture"
+        android:layout_alignParentTop="true"/>
 
     <Button
         android:id="@+id/uploadButton"
@@ -25,4 +28,46 @@
         android:layout_centerHorizontal="true"
         android:text="Upload"
         android:layout_height="wrap_content" />
+
+    <ProgressBar
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_below="@+id/uploadButton"
+        android:id="@+id/progress" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:hint="Start Time"
+        android:id="@+id/start"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/progress"
+        android:padding="16sp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:hint="End Time"
+        android:id="@+id/end"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/start"
+        android:padding="16sp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:hint="Difference"
+        android:id="@+id/diff"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/progress"
+        android:padding="16sp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/url"
+        android:padding="16sp"
+        android:hint="URL for the upload"
+        android:layout_below="@+id/end"/>
 </RelativeLayout>
